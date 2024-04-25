@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: `../.env` });
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { createReadStream } from 'fs';
+import { fileToBuffer } from "./s3_module.js";
 
 const client = new S3Client({
   region: process.env.AWS_REGION,
@@ -10,25 +10,6 @@ const client = new S3Client({
     secretAccessKey: process.env.SECRET_ACCESS_KEY,
   },
 });
-
-const fileToBuffer = async function(path) {
-    return new Promise((res, rej) => {
-        let chunks = [];
-        let stream = createReadStream(path);
-
-        stream.on('data', (chunk) => {
-            chunks.push(chunk);
-        })
-
-        stream.on('end', () => {
-            res(Buffer.concat(chunks));
-        });
-
-        stream.on('error', (error) => {
-            rej(error);
-        });
-    });
-}
 
 async function main() {
     try {
