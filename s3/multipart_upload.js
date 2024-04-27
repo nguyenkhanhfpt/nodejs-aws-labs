@@ -19,7 +19,7 @@ const objectKey = "largevideo.mp4";
 
 async function main() {
   try {
-    console.time()
+    console.time();
     console.log("Start send...");
     const createResponse = await createMultipartUpload();
     const { UploadId } = createResponse;
@@ -35,7 +35,7 @@ async function main() {
     );
     console.log("------------------");
     console.log(completeUploadRes);
-    console.timeEnd()
+    console.timeEnd();
   } catch (e) {
     console.log(e);
   }
@@ -52,7 +52,7 @@ async function createMultipartUpload() {
 
 const getUploadPartResultsUseListStream = async (UploadId) => {
   try {
-    const listStreamData = await getListStreamData("./png-5mb-1.png", {
+    const listStreamData = await getListStreamData("./largevideo.mp4", {
       highWaterMark: 1024 * 1024 * 5,
     });
     let uploadPartsPromises = [];
