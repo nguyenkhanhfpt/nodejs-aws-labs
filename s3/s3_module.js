@@ -1,4 +1,4 @@
-import { createReadStream } from 'fs';
+import { createReadStream } from "fs";
 
 const fileToBuffer = async function (path) {
   return new Promise((res, rej) => {
@@ -19,4 +19,23 @@ const fileToBuffer = async function (path) {
   });
 };
 
-export { fileToBuffer };
+const getListStreamData = async function (path, options = {}) {
+  return new Promise((res, rej) => {
+    let stream = createReadStream(path, options);
+    let lists = [];
+
+    stream.on("data", (chunk) => {
+      lists.push(chunk);
+    });
+
+    stream.on("end", () => {
+      res(lists);
+    });
+
+    stream.on("error", (error) => {
+      rej(error);
+    });
+  });
+};
+
+export { fileToBuffer, getListStreamData };

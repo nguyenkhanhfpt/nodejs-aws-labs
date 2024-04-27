@@ -6,7 +6,7 @@ import {
   UploadPartCommand,
   CompleteMultipartUploadCommand,
 } from "@aws-sdk/client-s3";
-import { fileToBuffer } from "./s3_module.js";
+import { fileToBuffer, getListStreamData } from "./s3_module.js";
 
 const client = new S3Client({
   region: process.env.AWS_REGION,
@@ -15,21 +15,27 @@ const client = new S3Client({
     secretAccessKey: process.env.SECRET_ACCESS_KEY,
   },
 });
-const objectKey = "largeobject.jpg";
+const objectKey = "largevideo.mp4";
 
 async function main() {
   try {
+    console.time()
     console.log("Start send...");
     const createResponse = await createMultipartUpload();
     const { UploadId } = createResponse;
 
     let uploadPartResults = await getUploadPartResults(UploadId);
+    // let uploadPartResults = await getUploadPartResultsUseListStream(UploadId);
     console.log("------------------");
     console.log(uploadPartResults);
 
-    let completeUploadRes = await completeMultipartUpload(UploadId, uploadPartResults);
+    let completeUploadRes = await completeMultipartUpload(
+      UploadId,
+      uploadPartResults
+    );
     console.log("------------------");
     console.log(completeUploadRes);
+    console.timeEnd()
   } catch (e) {
     console.log(e);
   }
@@ -44,9 +50,44 @@ async function createMultipartUpload() {
   return await client.send(command);
 }
 
+const getUploadPartResultsUseListStream = async (UploadId) => {
+  try {
+    const listStreamData = await getListStreamData("./png-5mb-1.png", {
+      highWaterMark: 1024 * 1024 * 5,
+    });
+    let uploadPartsPromises = [];
+
+    for (let i = 0; i < listStreamData.length; i++) {
+      let partNumber = i + 1;
+
+      let uploadPartsPromise = client
+        .send(
+          new UploadPartCommand({
+            UploadId,
+            Body: listStreamData[i],
+            Bucket: process.env.BUCKET_NAME,
+            Key: objectKey,
+            PartNumber: partNumber,
+          })
+        )
+        .then((d) => {
+          console.log("Part", partNumber, "uploaded : ", d);
+
+          return d;
+        });
+
+      uploadPartsPromises.push(uploadPartsPromise);
+    }
+
+    return await Promise.all(uploadPartsPromises);
+  } catch (error) {
+    throw error;
+  }
+};
+
 const getUploadPartResults = async (UploadId) => {
   try {
-    const objFile = await fileToBuffer("./png-5mb-1.png");
+    const objFile = await fileToBuffer("./largevideo.mp4");
     const partSize = 1024 * 1024 * 5;
     const parts = Math.ceil(objFile.length / partSize);
     let uploadPartsPromises = [];
